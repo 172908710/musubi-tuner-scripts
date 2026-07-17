@@ -1,4 +1,4 @@
-#--w 宽度 --h 高度 --d 种子 --g CFG --s 步数 --f 帧率，默认1为图片 --fs 为shift偏移值
-Convert the 2D illustration into a 3D figurine. Remove the entire background, including the sky, clouds, sun, and horses. Place the figurine on a sculpted base that incorporates the rocks, water, and flames from the bottom of the original image. Change the background to a solid dark gray gradient. --h 1584 --w 1200 --d 1026 --g 5 --s 20 --fs 2.2 --ci train\image\figure\anime\86.jpg
+# 20260708 Qwen Image Edit：每轮只生成 1 张固定对比样图
+# 固定控制图、分辨率、seed 和提示词，便于横向比较各 epoch 效果
 
-Change the 2D illustration into a photorealistic image of an articulated action figure, complete with visible joints at the shoulders, elbows, hips, and knees. Place the figure on a circular display stand with a magic circle design against a dark, textured background.  --h 992 --w 688 --d 1026 --g 5 --s 28 --fs 1.5 --ci train\image\figure\anime\27.jpg
+ql_ruin_style，将输入图编辑为中度破败废弃状态。严格保持与输入图完全相同的等距视角、主体类别、主体数量、构图、镜头角度、透视、主要轮廓、布局和比例。保留主体的主要结构和可辨识性，只添加局部裂缝、局部断裂、少量缺失部件、积灰、锈蚀、褪色、老化材质和少量碎片，整体使用略暗、低饱和的废弃氛围。不要大面积遮盖主体，不要堆放大量纸箱，不要移除大部分部件，不要整体坍塌，不要改变物体类别和主体布局。 --h 1024 --w 1280 --d 1026 --g 5 --s 28 --fs 2.0 --ci train/20260708/单提示词_破败废弃/A/1-蔬菜摊-1蔬菜车.png

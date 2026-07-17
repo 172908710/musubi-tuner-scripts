@@ -4,7 +4,7 @@
 $cache_mode = "qwen_image" # Cache mode | 缓存模式
 
 # Cache lantent
-$dataset_config = "./toml/qinglong-qwen-image-edit-datasets.toml"       # path to dataset config .toml file | 数据集配置文件路径
+$dataset_config = "./toml/qinglong-qwen-image-datasets.toml"            # path to dataset config .toml file | 数据集配置文件路径
 #$vae = "./ckpts/hunyuan-video-t2v-720p/vae/pytorch_model.pt" # VAE directory | VAE路径
 $vae = "./ckpts/vae/qwen_image_vae.safetensors"
 $vae_dtype = ""                                              # fp16 | fp32 |bf16 default: fp16
@@ -37,7 +37,7 @@ $one_frame_no_2x = $False
 $one_frame_no_4x = $False
 
 # Cache text encoder
-$text_encoder_batch_size = "1"                                            # batch size | Qwen-VL 较吃显存，先用1更稳
+$text_encoder_batch_size = "16"                                           # batch size
 $text_encoder_device = ""                                                 # cuda | cpu
 $text_encoder_num_workers = 0                                             # number of workers for dataset. default is cpu count-1
 $text_encoder_skip_existing = $False                                      # skip existing cache files
@@ -54,14 +54,15 @@ $fp8_t5 = $False                                                          # use 
 
 # Qwen-Image
 $text_encoder = "./ckpts/text_encoder/qwen_2.5_vl_7b.safetensors"         # Qwen2.5-VL model path | Qwen2.5-VL模型路径
-$fp8_vl = $True                                                           # RTX 3080 20GB：文本编码器使用 fp8，降低缓存阶段显存
-$model_version = "edit-2511"                                             # original, edit, edit-2509 or edit-2511
-$edit = $False                                                            # old compatibility flag, normally keep false
-$edit_plus = $False                                                       # old compatibility flag, normally keep false
+$fp8_vl = $False                                                          # use fp8 for Qwen2.5-VL model
+$edit_version = ""                                                        # original, 2509 or 2511
+$edit = $False                                                            # edit mode
+$edit_plus = $False                                                       # edit plus mode
 
 # ============= DO NOT MODIFY CONTENTS BELOW | 请勿修改下方内容 =====================
 # Activate python venv
 Set-Location $PSScriptRoot
+. (Join-Path $PSScriptRoot "powershell/native_command.ps1")
 if ($env:OS -ilike "*windows*") {
   if (Test-Path "./venv/Scripts/activate") {
     Write-Output "Windows venv"
@@ -81,15 +82,8 @@ elseif (Test-Path "./.venv/bin/activate") {
   ./.venv/bin/activate.ps1
 }
 
-# Force the official Hugging Face endpoint. An inherited HF_ENDPOINT pointing to
-# hf-mirror.com can return incomplete tokenizer metadata/files and make
-# Qwen2Tokenizer receive vocab_file=$null.
-$Env:HF_HOME = (Join-Path $PSScriptRoot "huggingface")
-$Env:HF_ENDPOINT = "https://huggingface.co"
-$Env:HF_HUB_DOWNLOAD_TIMEOUT = "120"
-$Env:HF_HUB_ETAG_TIMEOUT = "30"
-Remove-Item Env:HF_HUB_OFFLINE -ErrorAction SilentlyContinue
-Remove-Item Env:TRANSFORMERS_OFFLINE -ErrorAction SilentlyContinue
+$Env:HF_HOME = "huggingface"
+#$Env:HF_ENDPOINT = "https://hf-mirror.com"
 $Env:XFORMERS_FORCE_DISABLE_TRITON = "1"
 $ext_args = [System.Collections.ArrayList]::new()
 $ext2_args = [System.Collections.ArrayList]::new()
@@ -162,9 +156,9 @@ else {
     if ($fp8_vl) {
       [void]$ext2_args.Add("--fp8_vl")
     }
-    if ($model_version) {
-      [void]$ext_args.Add("--model_version=$model_version")
-      [void]$ext2_args.Add("--model_version=$model_version")
+    if ($edit_version) {
+      [void]$ext_args.Add("--edit_version=$edit_version")
+      [void]$ext2_args.Add("--edit_version=$edit_version")
     }
     else {
       if ($edit) {
@@ -233,18 +227,14 @@ if ($text_encoder_skip_existing) {
 }
 
 # run Cache
-python -m accelerate.commands.launch --num_processes=1 --num_machines=1 --mixed_precision=no --dynamo_backend=no "./musubi-tuner/$($script_path)cache_latents.py" `
+python -m accelerate.commands.launch "./musubi-tuner/$($script_path)cache_latents.py" `
   --dataset_config=$dataset_config `
   --vae=$vae $ext_args
-if ($LASTEXITCODE -ne 0) {
-  throw "Latent cache failed with exit code $LASTEXITCODE"
-}
+Assert-NativeCommandSucceeded "Command failed: 2.5.1、qwen_image_cache_latent_and_text_encoder.ps1"
 
-python -m accelerate.commands.launch --num_processes=1 --num_machines=1 --mixed_precision=no --dynamo_backend=no "./musubi-tuner/$($script_path)cache_text_encoder_outputs.py" `
+python -m accelerate.commands.launch "./musubi-tuner/$($script_path)cache_text_encoder_outputs.py" `
   --dataset_config=$dataset_config ` $ext2_args
-if ($LASTEXITCODE -ne 0) {
-  throw "Text encoder cache failed with exit code $LASTEXITCODE"
-}
+Assert-NativeCommandSucceeded "Command failed: 2.5.1、qwen_image_cache_latent_and_text_encoder.ps1"
 
-Write-Output "Cache finished successfully"
+Write-Output "Cache finished"
 Read-Host | Out-Null ;

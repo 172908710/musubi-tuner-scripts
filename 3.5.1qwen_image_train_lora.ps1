@@ -4,9 +4,9 @@
 $train_mode = "qwen_image_Lora"
 
 # model_path
-$dataset_config = "./toml/qinglong-qwen-image-edit-datasets.toml"            # path to dataset config .toml file | 数据集配置文件路径
-$dit = "./ckpts/diffusion_models/qwen_image_edit_2511_bf16.safetensors"       # DiT directory | DiT路径
-$vae = "./ckpts/vae/qwen_image_vae.safetensors"                               # VAE directory | VAE路径
+$dataset_config = "./toml/qinglong-qwen-image-datasets.toml"                           # Qwen-Image 数据集配置
+$dit = "./ckpts/diffusion_models/qwen_image_bf16.safetensors"                            # Qwen-Image 原版 DiT
+$vae = "./ckpts/vae/qwen_image_vae.safetensors"                                                 # VAE directory | VAE路径
 
 # HuyuanVideo Model
 $text_encoder1 = "./ckpts/text_encoder/t5xxl_fp16.safetensors"               # Text Encoder 1 directory | 文本编码器路径
@@ -27,9 +27,9 @@ $one_frame = $false
 # Qwen-Image
 $text_encoder = "./ckpts/text_encoder/qwen_2.5_vl_7b.safetensors"                   # Qwen2.5-VL model path | Qwen2.5-VL模型路径
 $fp8_vl = $false                                                                    # use fp8 for Qwen2.5-VL model
-$model_version = "edit-2511"                                                                  # original, edit, edit-2509 or edit-2511
-$edit = $false                                                                      # old compatibility flag, normally keep false
-$edit_plus = $false                                                                 # old compatibility flag, normally keep false
+$edit_version = ""                                                                  # original, 2509 or 2511
+$edit = $false                                                                      # edit mode
+$edit_plus = $false                                                                 # edit-plus mode (Qwen-Image-Edit-2509)
 $num_layers = ""                                                                    # optional: pruned DiT layers count
 $mem_eff_save = $False                                                              # Memory efficient checkpoint saving
 
@@ -88,14 +88,13 @@ $scale_weight_norms = 0 # scale weight norms (1 is a good starting point)| scale
 # $train_text_encoder_only = 0 # train Text Encoder only | 仅训练 文本编码器
 
 #precision and accelerate/save memory
-$attn_mode = "sdpa"                                                               # RTX 5090: FlashAttention 2 supports training backward and is faster/more memory-efficient than SDPA
-$split_attn = $True                                                                 # trim padded text tokens; batch size is 1, so overhead is negligible
+$attn_mode = "flash"                                                               # "flash", "xformers", "sdpa"
+$split_attn = $True                                                                 # split attention | split attention
 $mixed_precision = "bf16"                                                           # fp16 |bf16 default: bf16
-$save_precision = "bf16"                                                            # LoRA checkpoint save precision: float/fp32/fp16/bf16
 $full_bf16 = $False                                                                 # Enable full BF16 training for Qwen-Image finetune
 
 # Compile parameters
-$compile = $False
+$compile = $True
 $compile_backend = "inductor"
 $compile_mode = "max-autotune-no-cudagraphs"                                        # "default", "reduce-overhead", "max-autotune-no-cudagraphs"
 $compile_fullgraph = $False                                                         # use fullgraph mode for dynamo
@@ -125,13 +124,13 @@ $fp8_scaled = $True                                                             
 $max_data_loader_n_workers = 8                                                      # max data loader n workers | 最大数据加载线程数
 $persistent_data_loader_workers = $True                                             # save every n epochs | 每多少轮保存一次
 
-$blocks_to_swap = 0                                                                  # 交换的块数；PRO 6000 关闭 block swap
+$blocks_to_swap = 26                                                                 # 交换的块数
 $use_pinned_memory_for_block_swap = $True
 $img_in_txt_in_offloading = $True                                                   # img in txt in offloading
 
 #optimizer
-$optimizer_type = "AdamW"
-# adamw8bit | adamw32bit | adamw16bit | adafactor | Lion | Lion8bit | 
+$optimizer_type = "adamw"
+# adamw8bit | adamw32bit | adamw16bit | adafactor | Lion | Lion8bit |
 # PagedLion8bit | AdamW | AdamW8bit | PagedAdamW8bit | AdEMAMix8bit | PagedAdEMAMix8bit
 # DAdaptAdam | DAdaptLion | DAdaptAdan | DAdaptSGD | Sophia | Prodigy
 # Adv series：AdamW_adv | Prodigy_adv | Adopt_adv | Simplified_AdEMAMix | Lion_adv | Lion_Prodigy_adv
@@ -142,8 +141,8 @@ $fused_backward_pass = $False                                                   
 $wandb_api_key = ""                   # wandbAPI KEY，用于登录
 
 # save and load settings | 保存和输出设置
-$output_name = "ruined_abandoned_A2B_qwen_edit_2511_lora"  # output model name | 模型保存名称
-$save_every_n_epochs = "1"           # save every n epochs | 每多少轮保存一次
+$output_name = "qwen_image_lora_qinglong"       # output model name | 模型保存名称
+$save_every_n_epochs = "2"           # save every n epochs | 每多少轮保存一次
 $save_every_n_steps = ""              # save every n steps | 每多少步保存一次
 $save_last_n_epochs = ""            # save last n epochs | 保存最后多少轮
 $save_last_n_steps = ""               # save last n steps | 保存最后多少步
@@ -155,7 +154,7 @@ $save_last_n_epochs_state = ""        # save last n epochs state | 保存最后�
 $save_last_n_steps_state = ""         # save last n steps state | 保存最后多少步训练状态
 
 #LORA_PLUS
-$enable_lora_plus = $False
+$enable_lora_plus = $True
 $loraplus_lr_ratio = 4                #recommend 4~16
 
 #target blocks
@@ -165,9 +164,9 @@ $exclude_patterns = "" # Specify the values as a list. For example, "exclude_pat
 $include_patterns = "" # Specify the values as a list. For example, "include_patterns=[r'.*single_blocks\.\d{2}\.linear.*']".
 
 #lycoris组件
-$enable_lycoris = $False # 使用原生 Qwen-Image LoRA，兼容性和显存占用更可控
-$conv_dim = 4 #卷积 dim，推荐＜32
-$conv_alpha = 1 #卷积 alpha，推荐1或者0.3
+$enable_lycoris = $False # 开启lycoris
+$conv_dim = 0 #卷积 dim，推荐＜32
+$conv_alpha = 0 #卷积 alpha，推荐1或者0.3
 $algo = "lokr" # algo参数，指定训练lycoris模型种类，
 #包括lora(就是locon)、
 #loha
@@ -181,7 +180,7 @@ $algo = "lokr" # algo参数，指定训练lycoris模型种类，
 #dim 与区块大小相对应：我们在这里固定了区块大小而不是区块数量，以使其与 LoRA 更具可比性。
 
 $dropout = 0 #lycoris专用dropout
-$preset = "full" #预设训练模块配置
+$preset = "attn-mlp" #预设训练模块配置
 #full: default preset, train all the layers in the UNet and CLIP|默认设置，训练所有Unet和Clip层
 #full-lin: full but skip convolutional layers|跳过卷积层
 #attn-mlp: train all the transformer block.|kohya配置，训练所有transformer模块
@@ -196,18 +195,18 @@ $block_size = 4 #适用于dylora,分割块数单位，最小1也最慢。一般4
 $use_tucker = $false #适用于除 (IA)^3 和full
 $use_scalar = $false #根据不同算法，自动调整初始权重
 $train_norm = $false #归一化层
-$dora_wd = $false #Dora方法分解，低rank使用。适用于LoRA, LoHa, 和LoKr
-$full_matrix = $true  #全矩阵分解
-$bypass_mode = $true #通道模式，专为 bnb 8 位/4 位线性层设计。(QLyCORIS)适用于LoRA, LoHa, 和LoKr
+$dora_wd = $true #Dora方法分解，低rank使用。适用于LoRA, LoHa, 和LoKr
+$full_matrix = $false  #全矩阵分解
+$bypass_mode = $false #通道模式，专为 bnb 8 位/4 位线性层设计。(QLyCORIS)适用于LoRA, LoHa, 和LoKr
 $rescaled = 1 #适用于设置缩放，效果等同于OFT
 $constrain = $false #设置值为FLOAT，效果等同于COFT
 
 #sample | 输出采样图片
-$enable_sample = $True # 保留训练内采样，但降低频率以减少停训等待
-$sample_at_first = 0 # 已生成过基线图，重跑时不再花时间生成
-$sample_prompts = "./toml/qinglong_qwen_image_edit.txt"
-$sample_every_n_epochs = 1 # 与每2轮保存一次对齐；采样开销约数分钟/张
-$sample_every_n_steps = 0 # 禁用按 step 采样，避免同一轮重复出图
+$enable_sample = $True #1开启出图，0禁用
+$sample_at_first = 1 #是否在训练开始时就出图
+$sample_prompts = "./toml/qinglong_qwen_image.txt"      # Qwen-Image 采样提示词文件
+$sample_every_n_epochs = 2 #每n个epoch出一次图
+$sample_every_n_steps = 0 #每n步出一次图
 
 #metadata
 $training_comment = "this LoRA model created by bdsqlsz'script" # training_comment | 训练介绍，可以写作者名或者使用触发关键词
@@ -242,6 +241,7 @@ $ddp_static_graph = 1 #ddp static graph | ddp静态图，0关1开， 该参数�
 # ============= DO NOT MODIFY CONTENTS BELOW | 请勿修改下方内容 =====================
 # Activate python venv
 Set-Location $PSScriptRoot
+. (Join-Path $PSScriptRoot "powershell/native_command.ps1")
 if ($env:OS -ilike "*windows*") {
   if ($compile) {
     $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
@@ -269,14 +269,8 @@ elseif (Test-Path "./.venv/bin/activate") {
   ./.venv/bin/activate.ps1
 }
 
-# Keep tokenizer/processor downloads on the working official endpoint. An
-# inherited hf-mirror.com endpoint previously returned incomplete Qwen files.
-$Env:HF_HOME = (Join-Path $PSScriptRoot "huggingface")
-$Env:HF_ENDPOINT = "https://huggingface.co"
-$Env:HF_HUB_DOWNLOAD_TIMEOUT = "120"
-$Env:HF_HUB_ETAG_TIMEOUT = "30"
-Remove-Item Env:HF_HUB_OFFLINE -ErrorAction SilentlyContinue
-Remove-Item Env:TRANSFORMERS_OFFLINE -ErrorAction SilentlyContinue
+$Env:HF_HOME = "huggingface"
+#$Env:HF_ENDPOINT = "https://hf-mirror.com"
 $Env:XFORMERS_FORCE_DISABLE_TRITON = "1"
 $Env:VSLANG = "1033"
 $ext_args = [System.Collections.ArrayList]::new()
@@ -308,11 +302,11 @@ if ($train_mode -ilike "HunyuanVideo*" -or $train_mode -ilike "FramePack*" -or $
     if ($fp8_llm) {
       [void]$ext_args.Add("--fp8_llm")
     }
-    
+
     if ($vae_chunk_size) {
       [void]$ext_args.Add("--vae_chunk_size=$vae_chunk_size")
     }
-    
+
     if ($vae_spatial_tile_sample_min_size -ne 256) {
       [void]$ext_args.Add("--vae_spatial_tile_sample_min_size=$vae_spatial_tile_sample_min_size")
     }
@@ -331,8 +325,8 @@ if ($train_mode -ilike "HunyuanVideo*" -or $train_mode -ilike "FramePack*" -or $
     if ($fp8_vl) {
       [void]$ext_args.Add("--fp8_vl")
     }
-    if ($model_version) {
-      [void]$ext_args.Add("--model_version=$model_version")
+    if ($edit_version) {
+      [void]$ext_args.Add("--edit_version=$edit_version")
     }
     else {
       if ($edit) {
@@ -360,11 +354,11 @@ if ($train_mode -ilike "HunyuanVideo*" -or $train_mode -ilike "FramePack*" -or $
     if ($fp8_llm) {
       [void]$ext_args.Add("--fp8_llm")
     }
-    
+
     if ($vae_chunk_size) {
       [void]$ext_args.Add("--vae_chunk_size=$vae_chunk_size")
     }
-    
+
     if ($vae_spatial_tile_sample_min_size -ne 256) {
       [void]$ext_args.Add("--vae_spatial_tile_sample_min_size=$vae_spatial_tile_sample_min_size")
     }
@@ -693,10 +687,6 @@ if ($mixed_precision) {
     [void]$launch_args.Add("--downcast_bf16")
   }
   [void]$ext_args.Add("--mixed_precision=$mixed_precision")
-}
-
-if ($save_precision) {
-  [void]$ext_args.Add("--save_precision=$save_precision")
 }
 
 if ($vae_dtype) {
@@ -1183,10 +1173,7 @@ python -m accelerate.commands.launch --num_cpu_threads_per_process=8 $launch_arg
   --output_dir="./output_dir" `
   --logging_dir="./logs" `
   $ext_args
+Assert-NativeCommandSucceeded "Command failed: 3.5.1qwen_image_train_lora.ps1"
 
-if ($LASTEXITCODE -ne 0) {
-  throw "Training failed with exit code $LASTEXITCODE"
-}
-
-Write-Output "Training finished successfully"
+Write-Output "Training finished"
 Read-Host | Out-Null ;
