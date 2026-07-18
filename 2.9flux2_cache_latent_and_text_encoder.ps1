@@ -4,7 +4,7 @@
 $cache_mode = "flux2" # Cache mode | 缓存模式
 
 # Cache lantent
-$dataset_config = "./toml/qinglong-qwen-image-datasets.toml"               # path to dataset config .toml file | 数据集配置文件路径
+$dataset_config = "./toml/qinglong-qwen-image-edit-datasets.toml"          # FLUX.2 image-edit paired dataset: target B + control A | FLUX.2 编辑配对数据集：目标图 B + 控制图 A
 $vae = "./ckpts/vae/flux2-vae.safetensors"                                   # VAE (AutoEncoder) directory | VAE路径
 $vae_dtype = ""                                                       # fp16 | fp32 | bf16, default: fp32
 $device = ""                                                          # cuda | cpu
@@ -23,8 +23,8 @@ $text_encoder_num_workers = 0                                         # number o
 $text_encoder_skip_existing = $False                                  # skip existing cache files
 
 # FLUX.2 Model
-$model_version = "klein-base-4b"                                                # model version: dev | klein-4b | klein-base-4b | klein-9b | klein-base-9b
-$text_encoder = "./ckpts/text_encoder/qwen_3_4b.safetensors"     # Text Encoder (Mistral 3 or Qwen 3) checkpoint path
+$model_version = "klein-base-9b"                                                # model version: dev | klein-4b | klein-base-4b | klein-9b | klein-base-9b
+$text_encoder = "./ckpts/text_encoder/qwen_3_8b.safetensors"     # Klein 9B uses Qwen 3 8B | Klein 9B 使用 Qwen 3 8B
 $fp8_text_encoder = $False                                            # use fp8 for Text Encoder model
 
 # ============= DO NOT MODIFY CONTENTS BELOW | 请勿修改下方内容 =====================

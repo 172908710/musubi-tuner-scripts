@@ -4,13 +4,13 @@
 $train_mode = "flux2_Lora"
 
 # model_path
-$dataset_config = "./toml/qinglong-qwen-image-datasets.toml"                         # path to dataset config .toml file | 数据集配置文件路径
-$dit = "./ckpts/diffusion_models/flux-2-klein-base-4b.safetensors"                         # DiT directory | DiT路径
+$dataset_config = "./toml/qinglong-qwen-image-edit-datasets.toml"                         # path to dataset config .toml file | 数据集配置文件路径
+$dit = "./ckpts/diffusion_models/flux-2-klein-base-9b.safetensors"                         # DiT directory | DiT路径
 $vae = "./ckpts/vae/flux2-vae.safetensors"                                             # VAE directory | VAE路径
 
 # FLUX.2 Model
-$model_version = "klein-base-4b"                                                          # model version: dev | klein-4b | klein-base-4b | klein-9b | klein-base-9b
-$text_encoder = "./ckpts/text_encoder/qwen_3_4b.safetensors"               # Text Encoder (Mistral 3 or Qwen 3) directory | 文本编码器路径
+$model_version = "klein-base-9b"                                                          # model version: dev | klein-4b | klein-base-4b | klein-9b | klein-base-9b
+$text_encoder = "./ckpts/text_encoder/qwen_3_8b.safetensors"               # Text Encoder (Mistral 3 or Qwen 3) directory | 文本编码器路径
 $fp8_text_encoder = $false                                                      # use fp8 for Text Encoder model | Text Encoder 使用 fp8
 $fp8_scaled = $false                                                             # use scaled fp8 for DiT | DiT 使用 scaled fp8
 
@@ -85,7 +85,7 @@ $fp8_base = $False                                                              
 $max_data_loader_n_workers = 8                                                  # max data loader n workers | 最大数据加载线程数
 $persistent_data_loader_workers = $True                                         # persistent data loader workers | DataLoader 常驻 worker
 
-$blocks_to_swap = 0                                                             # 交换的块数
+$blocks_to_swap = 16                                                             # FLUX.2 Klein 9B 最大支持 16
 $use_pinned_memory_for_block_swap = $True                                       # use pinned memory for block swap | 块交换使用 pinned memory
 
 #optimizer
@@ -102,8 +102,8 @@ $d0 = "1e-3"                                                                   #
 $wandb_api_key = ""                                                           # wandbAPI KEY，用于登录
 
 # save and load settings | 保存和输出设置
-$output_name = "flux2_lora_qinglong"                                            # output model name | 模型保存名称
-$save_every_n_epochs = "2"                                                      # save every n epochs | 每多少轮保存一次
+$output_name = "qinglong_flux2_klein_base_9b_edit"                                            # output model name | 模型保存名称
+$save_every_n_epochs = "1"                                                      # save every n epochs | 每多少轮保存一次
 $save_every_n_steps = ""                                                        # save every n steps | 每多少步保存一次
 $save_last_n_epochs = ""                                                        # save last n epochs | 保存最后多少轮
 $save_last_n_steps = ""                                                         # save last n steps | 保存最后多少步
@@ -143,9 +143,9 @@ $rescaled = 1                                                                   
 $constrain = $false                                                             # 设置值为FLOAT，效果等同于COFT
 
 #sample | 输出采样图片
-$enable_sample = $true                                                          # 1开启出图，0禁用
-$sample_at_first = 1                                                            # 是否在训练开始时就出图
-$sample_prompts = "./toml/qinglong_qwen_image.txt"                                  # prompt文件路径
+$enable_sample = $true                                                          # 启用训练采样；每个 epoch 结束后生成预览图
+$sample_at_first = 1                                                            # 启动训练时先生成一次预览图
+$sample_prompts = "./toml/qinglong_qwen_image_edit.txt"                             # 编辑采样：包含固定控制图和编辑提示词
 $sample_every_n_epochs = 1                                                      # 每n个epoch出一次图
 $sample_every_n_steps = 0                                                       # 每n步出一次图
 
@@ -749,7 +749,7 @@ if ($optimizer_type -ieq "AdamW_adv") {
   [void]$ext_args.Add("--optimizer_type=adv_optm.AdamW_adv")
   [void]$ext_args.Add("--optimizer_args")
   # [void]$ext_args.Add("use_atan2=True")
-  [void]$ext_args.Add("grams_moment=True")
+  [void]$ext_args.Add("normed_momentum=True")
   # [void]$ext_args.Add("nnmf_factor=True")
   if ($compile) {
     [void]$ext_args.Add("compiled_optimizer=True")
