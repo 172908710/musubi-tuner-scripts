@@ -1,7 +1,8 @@
-# Qwen Image Edit dataset config for 20260708 single-prompt ruined/abandoned style training
+# Qwen Image Edit dataset config for the consolidated 20260708 AB concept dataset
 # image_directory = target images (B, ruined output)
 # control_directory = input/control images (A, clean/complete input)
-# captions (.txt) must be stored next to target images in image_directory
+# captions (.txt) are stored next to target images in image_directory
+# trigger word: ql_forsaken_asset
 
 [general]
 resolution = [1280, 1280]
@@ -11,10 +12,8 @@ enable_bucket = true
 bucket_no_upscale = true
 
 [[datasets]]
-# Use an ASCII-only junction path for Windows PowerShell 5.1 compatibility.
-# qwen_ruin_main -> 单提示词_破败废弃
-image_directory = "./train/20260708/单提示词_破败废弃/B"
-control_directory = "./train/20260708/单提示词_破败废弃/A"
-cache_directory = "./train/20260708/单提示词_破败废弃/cache_qwen_image_edit"
+image_directory = "./train/20260708/B"
+control_directory = "./train/20260708/A"
+cache_directory = "./train/20260708/cache_qwen_image_edit"
 num_repeats = 1
-no_resize_control = true  # A/B 尺寸逐对一致，保持控制图原始像素尺寸，减少编辑几何漂移
+no_resize_control = true  # A/B dimensions are paired; preserve original control-image geometry
